@@ -2,69 +2,68 @@
 #include <vector>
 #include <chrono>
 #include <omp.h>
-#include <cstdlib>
-#include <ctime>
 #include <windows.h>
 
+using namespace std;
 
-const int N = 10000;
+const int matrixSize = 1000;
 
-// Заполнение массива случайными числами
-void fillArray(std::vector<int> &arr) {
-	for (auto &el : arr) {
-		el = rand() % 1000;
-	}
-}
+using Matrix = vector<vector<int>>;
 
-// Последовательная версия сортировки
-void oddEvenTranspositionSortSequential(std::vector<int> &arr) {
-	bool sorted = false;
-	int n = arr.size();
-	while (!sorted) {
-		sorted = true;
-		
-		// Нечетная итерация
-		for (int i = 1; i < n - 1; i += 2) {
-			if (arr[i] > arr[i + 1]) {
-				std::swap(arr[i], arr[i + 1]);
-				sorted = false;
-			}
-		}
-
-		// Четная итерация
-		for (int i = 0; i < n - 1; i += 2) {
-			if (arr[i] > arr[i + 1]) {
-				std::swap(arr[i], arr[i + 1]);
-				sorted = false;
-			}
+// Заполнение матриц
+void fillMatrix(Matrix &matrix) {
+	for (auto &row : matrix) {
+		for (auto &element : row) {
+			element = rand() % 100;
 		}
 	}
 }
 
-// Параллельная версия сортировки
-void oddEvenTranspositionSortParallel(std::vector<int> &arr) {
-	bool sorted = false;
-	int n = arr.size();
-	while (!sorted) {
-		sorted = true;
-		
-		// Нечетная итерация
-		#pragma omp parallel for shared(arr, sorted)
-		for (int i = 1; i < n - 1; i += 2) {
-			if (arr[i] > arr[i + 1]) {
-				std::swap(arr[i], arr[i + 1]);
-				#pragma omp critical
-				sorted = false;
+// Очистка матриц
+void resetMatrix(Matrix &matrix) {
+	for (auto &row : matrix) {
+		fill(row.begin(), row.end(), 0);
+	}
+}
+
+// Измерение времени
+double measureExecutionTime(void (*func)(const Matrix&, const Matrix&, Matrix&), const Matrix &A, const Matrix &B, Matrix &C) {
+	auto start = chrono::high_resolution_clock::now();
+	func(A, B, C);
+	auto end = chrono::high_resolution_clock::now();
+	return chrono::duration<double>(end - start).count();
+}
+
+// Умножение матриц без многопоточности
+void multiplySequential(const Matrix &A, const Matrix &B, Matrix &result) {
+	for (int i = 0; i < matrixSize; ++i) {
+		for (int j = 0; j < matrixSize; ++j) {
+			for (int k = 0; k < matrixSize; ++k) {
+				result[i][j] += A[i][k] * B[k][j];
 			}
 		}
+	}
+}
 
-		// Четная итерация
-		#pragma omp parallel for shared(arr, sorted)
-		for (int i = 0; i < n - 1; i += 2) {
-			if (arr[i] > arr[i + 1]) {
-				std::swap(arr[i], arr[i + 1]);
-				#pragma omp critical
-				sorted = false;
+// Умножене с OpenMP static
+void multiplyParallelStatic(const Matrix &A, const Matrix &B, Matrix &result) {
+	#pragma omp parallel for schedule(static)
+	for (int i = 0; i < matrixSize; ++i) {
+		for (int j = 0; j < matrixSize; ++j) {
+			for (int k = 0; k < matrixSize; ++k) {
+				result[i][j] += A[i][k] * B[k][j];
+			}
+		}
+	}
+}
+
+// Умножение с OpenMP dynamic (4 блока)
+void multiplyParallelDynamic(const Matrix &A, const Matrix &B, Matrix &result) {
+	#pragma omp parallel for schedule(dynamic, 4)
+	for (int i = 0; i < matrixSize; ++i) {
+		for (int j = 0; j < matrixSize; ++j) {
+			for (int k = 0; k < matrixSize; ++k) {
+				result[i][j] += A[i][k] * B[k][j];
 			}
 		}
 	}
@@ -72,27 +71,25 @@ void oddEvenTranspositionSortParallel(std::vector<int> &arr) {
 
 int main() {
 	SetConsoleOutputCP(65001);
+	srand(static_cast<unsigned>(time(nullptr)));
 
 	omp_set_num_threads(4);
-
-	std::vector<int> arrSequential(N);
-	std::vector<int> arrParallel(N);
 	
-	// Заполнение массивов случайными числами
-	fillArray(arrSequential);
-	arrParallel = arrSequential;
-
-	// Последовательная сортировка
-	auto start = std::chrono::high_resolution_clock::now();
-	oddEvenTranspositionSortSequential(arrSequential);
-	auto end = std::chrono::high_resolution_clock::now();
-	std::cout << "Последовательная сортировка: " << std::chrono::duration<double>(end - start).count() << "s" << std::endl;
+	Matrix A(matrixSize, vector<int>(matrixSize));
+	Matrix B(matrixSize, vector<int>(matrixSize));
+	Matrix C(matrixSize, vector<int>(matrixSize, 0));
 	
-	// Параллельная сортировка
-	start = std::chrono::high_resolution_clock::now();
-	oddEvenTranspositionSortParallel(arrParallel);
-	end = std::chrono::high_resolution_clock::now();
-	std::cout << "Параллельная сортировка: " << std::chrono::duration<double>(end - start).count() << "s" << std::endl;
+	fillMatrix(A);
+	fillMatrix(B);
 
+	cout << "Однопоточное умножение: " << measureExecutionTime(multiplySequential, A, B, C) << " сек\n";
+	
+	resetMatrix(C);
+	cout << "OpenMP static: " << measureExecutionTime(multiplyParallelStatic, A, B, C) << " сек\n";
+	
+	resetMatrix(C);
+	cout << "OpenMP dynamic (4 блока): " << measureExecutionTime(multiplyParallelDynamic, A, B, C) << " сек\n";
+	
 	return 0;
 }
+
