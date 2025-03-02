@@ -25,7 +25,7 @@ void fillMatrix(Matrix &matrix) {
 }
 
 // Умножение матрицы на вектор последовательно
-std::vector<double> multiplySequential(const Matrix &matrix, std::vector<int> &arr) {
+void multiplySequential(const Matrix &matrix, std::vector<int> &arr) {
 	size_t rows = matrix.size();
 	size_t cols = matrix[0].size();
 	std::vector<double> result(rows, 0.0);
@@ -35,11 +35,10 @@ std::vector<double> multiplySequential(const Matrix &matrix, std::vector<int> &a
 			result[i] += matrix[i][j] * arr[j];
 		}
 	}
-	return result;
 }
 
 // Умножение матрицы на вектор параллельно
-std::vector<double> multiplyParallel(const Matrix &matrix, std::vector<int> &arr) {
+void multiplyParallel(const Matrix &matrix, std::vector<int> &arr) {
 	size_t rows = matrix.size();
 	size_t cols = matrix[0].size();
 	std::vector<double> result(rows, 0.0);
@@ -50,7 +49,6 @@ std::vector<double> multiplyParallel(const Matrix &matrix, std::vector<int> &arr
 			result[i] += matrix[i][j] * arr[j];
 		}
 	}
-	return result;
 }
 
 int main() {
