@@ -73,6 +73,8 @@ void oddEvenTranspositionSortParallel(std::vector<int> &arr) {
 int main() {
 	SetConsoleOutputCP(65001);
 
+	omp_set_num_threads(4);
+
 	std::vector<int> arrSequential(N);
 	std::vector<int> arrParallel(N);
 	
