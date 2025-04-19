@@ -23,11 +23,9 @@ float mandelbrot(double x0, double y0) {
 cv::Vec3b getColor(float t) {
 	t = t / 1000;
 
-	unsigned char r = static_cast<unsigned char>(255.0 * std::pow(t, 0.3));
-	unsigned char g = static_cast<unsigned char>(255.0 * std::pow(t, 0.5));
-	unsigned char b = static_cast<unsigned char>(255.0 * std::pow(t, 0.7));
+	unsigned char g = static_cast<unsigned char>(255.0 * std::pow(t, 0.3));
 
-	return cv::Vec3b(b, g, r);
+	return cv::Vec3b(0, g, 0);
 }
 
 void generateFractal(cv::Mat& image, int start, int total) {
